@@ -72,7 +72,11 @@ if [ "$NEW_ENV" = true ] ; then
     conda activate trellis
     conda install pytorch==2.4.0 torchvision==0.19.0 pytorch-cuda=11.8 -c pytorch -c nvidia
     conda install -y "mkl<2024.1" "intel-openmp<2024.1"
-    conda 
+    conda install -c nvidia/label/cuda-11.8.0 cuda #Installing cuda toolkit 
+    export CUDA_HOME=$CONDA_PREFIX
+    export PATH=$CUDA_HOME/bin:$PATH
+    echo "[CUDA_HOME]:$CUDA_HOME"
+    echo "[PATH]:$PATH"
 fi
 
 # Get system information
