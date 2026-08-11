@@ -115,10 +115,45 @@ async def generate(
     job_id = str(uuid.uuid4())
     out_path = os.path.join(OUTPUT_DIR, f"{job_id}.glb")
     glb.export(out_path)
+    
+    dimensions = compute_bounding_box(out_path)
 
-    print(f"[server] done -> {out_path}")
-    return {"job_id": job_id, "download_url": f"/download/{job_id}"}
+    print(f"[server] done -> {out_path}  bbox={dimensions}")
+    return {
+        "job_id": job_id,
+        "download_url": f"/download/{job_id}",
+        "dimensions": dimensions,
+    }
 
+def compute_bounding_box(glb_path: str):
+    """
+    Reload the exported .glb with trimesh and compute its axis-aligned
+    bounding box. Returns size (width/height/depth), min/max corners, and
+    diagonal length, all in TRELLIS's normalized model-space units (not
+    real-world units — TRELLIS doesn't know true physical scale).
+    """
+    import trimesh
+
+    scene_or_mesh = trimesh.load(glb_path, force="scene")
+
+    if isinstance(scene_or_mesh, trimesh.Scene):
+        mesh = scene_or_mesh.to_geometry() if len(scene_or_mesh.geometry) else None
+        bounds = scene_or_mesh.bounds if mesh is None else mesh.bounds
+    else:
+        bounds = scene_or_mesh.bounds
+
+    min_corner, max_corner = bounds[0], bounds[1]
+    size = max_corner - min_corner
+
+    return {
+        "width_x": round(float(size[0]), 4),
+        "height_y": round(float(size[1]), 4),
+        "depth_z": round(float(size[2]), 4),
+        "diagonal": round(float((size ** 2).sum() ** 0.5), 4),
+        "min_corner": [round(float(v), 4) for v in min_corner],
+        "max_corner": [round(float(v), 4) for v in max_corner],
+        "units": "normalized (model space, not real-world scale)",
+    }
 
 @app.get("/download/{job_id}")
 def download(job_id: str):
