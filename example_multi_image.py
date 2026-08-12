@@ -1,5 +1,5 @@
 import os
-# os.environ['ATTN_BACKEND'] = 'xformers'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
+os.environ['ATTN_BACKEND'] = 'xformers'   # Can be 'flash-attn' or 'xformers', default is 'flash-attn'
 os.environ['SPCONV_ALGO'] = 'native'        # Can be 'native' or 'auto', default is 'auto'.
                                             # 'auto' is faster but will do benchmarking at the beginning.
                                             # Recommended to set to 'native' if run only once.
@@ -8,7 +8,7 @@ import numpy as np
 import imageio
 from PIL import Image
 from trellis.pipelines import TrellisImageTo3DPipeline
-from trellis.utils import render_utils
+from trellis.utils import render_utils, postprocessing_utils
 
 # Load a pipeline from a model folder or a Hugging Face model hub.
 pipeline = TrellisImageTo3DPipeline.from_pretrained("microsoft/TRELLIS-image-large")
@@ -16,9 +16,13 @@ pipeline.cuda()
 
 # Load an image
 images = [
-    Image.open("assets/example_multi_image/character_1.png"),
-    Image.open("assets/example_multi_image/character_2.png"),
-    Image.open("assets/example_multi_image/character_3.png"),
+    Image.open("assets/example_multi_image/0.png"),
+    Image.open("assets/example_multi_image/1.png"),
+    Image.open("assets/example_multi_image/2.png"),
+    Image.open("assets/example_multi_image/3.png"),
+    Image.open("assets/example_multi_image/4.png"),
+    Image.open("assets/example_multi_image/5.png"),
+    Image.open("assets/example_multi_image/6.png"),
 ]
 
 # Run the pipeline
@@ -44,3 +48,15 @@ video_gs = render_utils.render_video(outputs['gaussian'][0])['color']
 video_mesh = render_utils.render_video(outputs['mesh'][0])['normal']
 video = [np.concatenate([frame_gs, frame_mesh], axis=1) for frame_gs, frame_mesh in zip(video_gs, video_mesh)]
 imageio.mimsave("sample_multi.mp4", video, fps=30)
+
+glb = postprocessing_utils.to_glb(
+    outputs['gaussian'][0],
+    outputs['mesh'][0],
+    # Optional parameters
+    simplify=0.95,          # Ratio of triangles to remove in the simplification process
+    texture_size=1024,      # Size of the texture used for the GLB
+)
+glb.export("sample.glb")
+
+# Save Gaussians as PLY files
+outputs['gaussian'][0].save_ply("sample.ply")
