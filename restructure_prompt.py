@@ -184,12 +184,7 @@ def rewrite_prompt(
     vlm_api_key: str = "not-needed",
 ) -> PromptResult:
     """
-    Fallback chain: spec sheet > density estimate > direct VLM guess.
-
-    solid_fill_ratio: fraction of the bounding-box volume assumed to be
-    actual solid material (objects are rarely solid cuboids -- a plate is
-    mostly a thin shell, a loaf of bread has a rounded top). 0.6 is a
-    generic placeholder; tune per category if you want better accuracy.
+    Calling for prompt rewriting to Qwen2.5-vl-7b-instruct
     """
 
     prompt = SYSTEM_PROMPT.format(user_input=user_prompt,)
